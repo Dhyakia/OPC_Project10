@@ -19,11 +19,11 @@ class UserManager(BaseUserManager):
             raise
 
     def create_user(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', False)
+        extra_fields.setdefault('is_staff', False)
         return self._create_user(email, password, **extra_fields)
     
     def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_staff', True)
         return self._create_user(email, password, **extra_fields)
 
 
@@ -33,6 +33,8 @@ class User(AbstractBaseUser):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     password = models.CharField(max_length=20)
+
+    is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
