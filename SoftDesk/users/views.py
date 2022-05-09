@@ -4,10 +4,10 @@ from django.conf import settings
 
 from rest_framework import status, permissions
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 
+import jwt
 
 from users.serializers import UserSerializer
 from users.models import User
@@ -37,8 +37,7 @@ def authenticate_user(request):
 
         if user:
             try:
-                payload = jwt_payload_handler(user)
-                token = jwt.encode(payload, settings.SECRET_KEY)
+                token = jwt.encode({"user": "user"}, key=settings.SECRET_KEY, algorithm="HS256")
                 
                 user_details = {}
                 user_details['name'] = "%s %s" % (
@@ -47,7 +46,7 @@ def authenticate_user(request):
                     )
                 user_details['token'] = token
                 user_logged_in.send(
-                    sender=user.__class_,
+                    sender=user.__class__,
                     request=request,
                     user=user,
                 )
