@@ -1,5 +1,7 @@
+from multiprocessing.sharedctypes import Value
 from django.db import models, transaction
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 
 class UserManager(BaseUserManager):
@@ -7,12 +9,18 @@ class UserManager(BaseUserManager):
     def _create_user(self, email, password, **extra_fields):
 
         if not email:
-            raise ValueError('Un email est necessaire')
+            raise ValueError('Un email est necessaire.')
+        
+        if not password:
+            raise ValueError('Un mot de passe est necessaire.')
         
         try:
             with transaction.atomic():
                 user = self.model(email=email, **extra_fields)
-                user.set_password(password)
+
+                mdp = make_password(password)
+                user.set_password(mdp)
+                
                 user.save(using=self._db)
                 return user
         except:
@@ -20,14 +28,16 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
         return self._create_user(email, password, **extra_fields)
     
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
         return self._create_user(email, password, **extra_fields)
 
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(max_length=50, unique=True)
     first_name = models.CharField(max_length=20)
@@ -35,6 +45,7 @@ class User(AbstractBaseUser):
     password = models.CharField(max_length=20)
 
     is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
