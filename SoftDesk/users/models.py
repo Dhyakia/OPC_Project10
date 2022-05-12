@@ -1,6 +1,4 @@
-from multiprocessing.sharedctypes import Value
 from django.db import models, transaction
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 
@@ -11,16 +9,13 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('Un email est necessaire.')
         
-        if not password:
+        elif not password:
             raise ValueError('Un mot de passe est necessaire.')
         
         try:
             with transaction.atomic():
                 user = self.model(email=email, **extra_fields)
-
-                mdp = make_password(password)
-                user.set_password(mdp)
-                
+                user.set_password(password)
                 user.save(using=self._db)
                 return user
         except:
@@ -42,7 +37,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=50, unique=True)
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
-    password = models.CharField(max_length=20)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
