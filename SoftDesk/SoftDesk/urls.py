@@ -14,5 +14,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('signup/', userV.CreateUserAPIView.as_view(), name='signup'),
-    path('login/', userV.AuthenticateUser.as_view(), name='login'),
+    path('projects/',projectsV.ProjectAPIView.as_view(), name='create_project'),
+    
 ]
