@@ -1,10 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
 
+from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from users import views as userV
 from projects import views as projectsV
+
+
+router = routers.SimpleRouter()
+router.register('projects', projectsV.ProjectsViewset, basename='projects')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,6 +19,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('signup/', userV.CreateUserAPIView.as_view(), name='signup'),
-    path('projects/',projectsV.ProjectAPIView.as_view(), name='create_project'),
+    path('api/', include(router.urls)),
     
 ]

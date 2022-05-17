@@ -1,22 +1,24 @@
 from rest_framework import status, permissions
-from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
+from projects.models import Projects
 from projects.serializers import ProjectSerializer
 
 
-class ProjectAPIView(APIView):
+class ProjectsViewset(ModelViewSet):
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProjectSerializer
+    queryset = Projects.objects.all()
 
-    def get(self, request):
-        # Récupérer les projects dont l'utilisateur est:
-        # 1. l'auteur
-        # 2. Un contributeur
-        
-        return Response()
+    def get_queryset(self):
+        # TODO: Filtrer les contributeurs
+        queryset = self.queryset
+        query_filtered = queryset.filter(author_user_id=self.request.user.id)
+        return query_filtered
 
-    def post(self, request):
+    def create(self, request):
         project = request.data
         serializer = ProjectSerializer(data=project)
         
