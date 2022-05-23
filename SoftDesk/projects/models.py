@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from users.models import User
+
 
 class Projects(models.Model):
 
@@ -18,3 +20,25 @@ class Projects(models.Model):
     description = models.CharField(max_length=3000)
     type = models.CharField(max_length=30, choices=TYPE_CHOICES)
     author_user_id = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+
+class Contributors(models.Model):
+
+    AUTHOR = 'AUT'
+    CONTRIBUTORS = 'CTB'
+
+    PERMISSIONS_CHOICES = (
+        (AUTHOR, 'Auteur'),
+        (CONTRIBUTORS, 'Collaborateur'),
+    )
+
+    user = models.ForeignKey(to=User, on_delete=models.CASCADE)
+    project = models.ForeignKey(to=Projects, on_delete=models.CASCADE)
+    permission = models.CharField(max_length=30, choices=PERMISSIONS_CHOICES, default=CONTRIBUTORS)
+    role = models.CharField(max_length=30)
+
+    def __str__(self):
+        return 'name: {} role: {}'.format(self.user_id.last_name, self.role)
