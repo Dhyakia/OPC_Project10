@@ -60,12 +60,11 @@ class ContributorsViewset(ModelViewSet):
 
     def destroy(self, request, projects_pk=None, pk=None):
         contributor = Contributors.objects.filter(project=projects_pk, user=pk)
-        
+
         if contributor:
-            contributor.delete
-            message = 'Contributeur correctement supprimé'
-            return Response(message, status=status.HTTP_204_NO_CONTENT)
+            contributor.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
         else:
-            error_message = 'Se contributeur n`existe pas'
-            return Response(error_message, status=status.HTTP_400_BAD_REQUEST)
+            message = 'Pas ou plus d`utilisateur à cette adresse'
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
