@@ -1,3 +1,4 @@
+from tkinter import CASCADE
 from django.conf import settings
 from django.db import models
 
@@ -42,3 +43,37 @@ class Contributors(models.Model):
 
     def __str__(self):
         return 'name: {} role: {}'.format(self.user_id.last_name, self.role)
+
+
+class Issues(models.Model):
+
+    LOW = 'LOW'
+    MIDDLE = 'MID'
+    HIGH = 'HIG'
+
+    BUG = 'BUG'
+    TASK = 'TSK'
+    UPGRADE = 'UPG'
+
+    PRIORITY_CHOICES = (
+        (LOW,'Basse priorité...'),
+        (MIDDLE,'Moyenne priorité.'),
+        (HIGH, 'Haute priorité !')
+    )
+
+    TAG_CHOICES = (
+        (BUG, 'Bug'),
+        (TASK, 'Tâche'),
+        (UPGRADE, 'Amélioration')
+    )
+
+    title = models.CharField(max_length=20)
+    desc = models.CharField(max_length=120)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
+    tag = models.CharField(max_length=10, choices=PRIORITY_CHOICES)
+
+    author_user = models.ForeignKey(to=User, on_delete=CASCADE)
+    assigne_user = models.ForeignKey(to=User, on_delete=CASCADE)
+    project = models.ForeignKey(to=Projects, on_delete=CASCADE)
+
+    created_time = models.DateTimeField(auto_now_add=True)
