@@ -1,4 +1,3 @@
-from tkinter import CASCADE
 from django.conf import settings
 from django.db import models
 
@@ -72,8 +71,8 @@ class Issues(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
     tag = models.CharField(max_length=10, choices=PRIORITY_CHOICES)
 
-    author_user = models.ForeignKey(to=User, on_delete=CASCADE)
-    assigne_user = models.ForeignKey(to=User, on_delete=CASCADE)
-    project = models.ForeignKey(to=Projects, on_delete=CASCADE)
+    author_user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='rel_author_user')
+    assigne_user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='rel_assigne_user')
+    project = models.ForeignKey(to=Projects, on_delete=models.CASCADE)
 
     created_time = models.DateTimeField(auto_now_add=True)

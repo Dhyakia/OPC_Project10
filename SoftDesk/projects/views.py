@@ -3,8 +3,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
 from users.models import User
-from projects.models import Projects, Contributors
-from projects.serializers import ProjectSerializer, ContributorSerializer
+from projects.models import Projects, Contributors, Issues
+from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer
 
 
 class ProjectsViewset(ModelViewSet):
@@ -25,9 +25,6 @@ class ProjectsViewset(ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             serializer.save(author_user_id=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    # def put (update or partial_update)
-    # def delete (destroy)
 
 
 class ContributorsViewset(ModelViewSet):
@@ -68,3 +65,16 @@ class ContributorsViewset(ModelViewSet):
         else:
             message = 'Pas ou plus d`utilisateur à cette adresse'
             return Response(message, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IssuesViewset(ModelViewSet):
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = IssueSerializer
+    queryset = Issues.objects.all()
+
+    def list(self, request, projects_pk=None):
+        pass
+
+    def create(self, request, projects_pk=None):
+        pass

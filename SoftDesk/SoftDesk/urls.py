@@ -1,3 +1,4 @@
+from cgitb import lookup
 from django.contrib import admin
 from django.urls import path, include
 
@@ -11,8 +12,11 @@ from projects import views as projectsV
 router = routers.SimpleRouter()
 router.register(r'projects', projectsV.ProjectsViewset)
 
-projects_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
-projects_router.register(r'users', projectsV.ContributorsViewset)
+projects_user_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
+projects_user_router.register(r'users', projectsV.ContributorsViewset)
+
+projects_issue_router = routers.NestedSimpleRouter(router, r'projects', lookup='projects')
+projects_issue_router.register(r'issues', projectsV.IssuesViewset)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,6 +27,6 @@ urlpatterns = [
 
     path('signup/', userV.CreateUserAPIView.as_view(), name='signup'),
     path(r'', include(router.urls)),
-    path(r'', include(projects_router.urls))
+    path(r'', include(projects_user_router.urls))
     
 ]
