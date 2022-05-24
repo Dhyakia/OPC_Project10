@@ -76,3 +76,13 @@ class Issues(models.Model):
     project = models.ForeignKey(to=Projects, on_delete=models.CASCADE)
 
     created_time = models.DateTimeField(auto_now_add=True)
+
+
+class Comments(models.Model):
+
+    description = models.CharField(max_length=255)
+
+    author_user = models.ForeignKey(to=User, on_delete=models.CASCADE)
+    issue = models.ForeignKey(to=Issues, on_delete=models.CASCADE)
+
+    created_time = models.DateTimeField(auto_now_add=True)

@@ -3,8 +3,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
 from users.models import User
-from projects.models import Projects, Contributors, Issues
-from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer
+from projects.models import Projects, Contributors, Issues, Comments
+from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer, CommentSerializer
 
 
 class ProjectsViewset(ModelViewSet):
@@ -75,7 +75,7 @@ class IssuesViewset(ModelViewSet):
     def list(self, request, projects_pk=None):
         queryset = Issues.objects.filter(project=projects_pk)
         serializer = IssueSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, projects_pk=None):
         issue = request.data
@@ -104,3 +104,51 @@ class IssuesViewset(ModelViewSet):
         else:
             message = 'Pas ou plus de problême à cette adresse'
             return Response(message, status=status.HTTP_404_NOT_FOUND)
+
+
+class CommentsViewset(ModelViewSet):
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CommentSerializer
+    queryset = Comments.objects.all()
+
+    def list(self, request, projects_pk=None, issues_pk=None):
+        queryset = Comments.objects.filter(issue=issues_pk)
+        serializer = CommentSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, projects_pk=None, issues_pk=None):
+        comment = request.data
+        serializer = CommentSerializer(data=comment)
+
+        if serializer.is_valid(raise_exception=True):
+            current_user = User.objects.get(id=request.user.id)
+            current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
+
+            serializer.save(
+                author_user = current_user,
+                issue = current_issue
+            )
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):   
+        current_user = User.objects.get(id=request.user.id)
+        current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
+
+        comment = Comments.objects.filter(
+            author_user=current_user,
+            issue=current_issue,
+            id=pk
+            )
+
+        if comment:
+            comment.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        else:
+            message = 'Pas ou plus de commentaire à cette adresse'
+            return Response(message, status=status.HTTP_404_NOT_FOUND)
+
+# TODO: fonction list ne filtre pas suffisement, je crois
+# TODO: la 19eme function à écrire
