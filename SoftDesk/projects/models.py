@@ -69,7 +69,7 @@ class Issues(models.Model):
     title = models.CharField(max_length=20)
     desc = models.CharField(max_length=120)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
-    tag = models.CharField(max_length=10, choices=PRIORITY_CHOICES)
+    tag = models.CharField(max_length=10, choices=TAG_CHOICES)
 
     author_user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='rel_author_user')
     assigne_user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='rel_assigne_user')

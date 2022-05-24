@@ -24,4 +24,4 @@ class IssueSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Issues
         fields = ('id', 'title', 'desc', 'priority', 'tag', 'author_user', 'assigne_user', 'project')
-        read_only_fields = ['author_uder', 'assigne_user', 'project']
+        read_only_fields = ['author_user', 'assigne_user', 'project']

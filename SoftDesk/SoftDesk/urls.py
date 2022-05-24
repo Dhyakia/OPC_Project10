@@ -27,6 +27,7 @@ urlpatterns = [
 
     path('signup/', userV.CreateUserAPIView.as_view(), name='signup'),
     path(r'', include(router.urls)),
-    path(r'', include(projects_user_router.urls))
+    path(r'', include(projects_user_router.urls)),
+    path(r'', include(projects_issue_router.urls)),
     
 ]
