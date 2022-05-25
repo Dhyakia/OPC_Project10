@@ -1,3 +1,6 @@
+from gc import get_objects
+from logging import raiseExceptions
+from xml.etree.ElementTree import Comment
 from rest_framework import status, permissions
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -18,6 +21,11 @@ class ProjectsViewset(ModelViewSet):
         serializer = ProjectSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def retrieve(self, request, pk=None):
+        query = Projects.objects.get(id=pk)
+        serializer = ProjectSerializer(query)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request):
         project = request.data
         serializer = ProjectSerializer(data=project)
@@ -25,6 +33,31 @@ class ProjectsViewset(ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             serializer.save(author_user_id=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+
+        new_title = request.data['title']
+        new_description = request.data['description']
+        new_type = request.data['type']
+
+        project = Projects.objects.filter(id=pk).update(
+            title=new_title,
+            description=new_description,
+            type=new_type
+            )
+
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+    def destroy(self, request, pk=None):
+        project = Projects.objects.filter(id=pk)
+
+        if project:
+            project.delete()            
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        else:
+            message = 'Pas ou plus de projet à cette adresse'
+            return Response(message, status=status.HTTP_404_NOT_FOUND)
 
 
 class ContributorsViewset(ModelViewSet):
@@ -54,8 +87,11 @@ class ContributorsViewset(ModelViewSet):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def update(self):
+        pass
+
     def destroy(self, request, projects_pk=None, pk=None):
-        contributor = Contributors.objects.filter(project=projects_pk, user=pk)
+        contributor = Contributors.objects.filter(id=pk)
 
         if contributor:
             contributor.delete()
@@ -64,7 +100,7 @@ class ContributorsViewset(ModelViewSet):
         else:
             message = 'Pas ou plus d`utilisateur à cette adresse'
             return Response(message, status=status.HTTP_404_NOT_FOUND)
-
+    
 
 class IssuesViewset(ModelViewSet):
 
@@ -94,6 +130,22 @@ class IssuesViewset(ModelViewSet):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def update(self, request, projects_pk=None, pk=None):
+        
+        new_title = request.data['title']
+        new_desc = request.data['desc']
+        new_priority = request.data['priority']
+        new_tag = request.data['tag']
+
+        issue = Issues.objects.filter(id=pk).update(
+            title=new_title,
+            desc=new_desc,
+            priority=new_priority,
+            tag=new_tag
+        )
+
+        return Response(status=status.HTTP_202_ACCEPTED)
+
     def destroy(self, request, projects_pk=None, pk=None):
         issue = Issues.objects.filter(project=projects_pk, id=pk)
 
@@ -117,6 +169,11 @@ class CommentsViewset(ModelViewSet):
         serializer = CommentSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def retrieve(self, request, projects_pk=None, issues_pk=None, pk=None):
+        query =  Comments.objects.get(id=pk)
+        serializer = CommentSerializer(query)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, projects_pk=None, issues_pk=None):
         comment = request.data
         serializer = CommentSerializer(data=comment)
@@ -131,6 +188,15 @@ class CommentsViewset(ModelViewSet):
             )
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, projects_pk=None, issues_pk=None, pk=None):
+
+        new_description = request.data['description']
+        comment = Comments.objects.filter(id=pk).update(
+            description=new_description
+        )
+
+        return Response(status=status.HTTP_202_ACCEPTED)
 
     def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):   
         current_user = User.objects.get(id=request.user.id)
@@ -149,6 +215,3 @@ class CommentsViewset(ModelViewSet):
         else:
             message = 'Pas ou plus de commentaire à cette adresse'
             return Response(message, status=status.HTTP_404_NOT_FOUND)
-
-# TODO: fonction list ne filtre pas suffisement, je crois
-# TODO: la 19eme function à écrire
