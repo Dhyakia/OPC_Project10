@@ -8,6 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'password')
+        read_only_fields = ['id']
 
     def create(self, *args, **kwargs):
         user = super().create(*args, **kwargs)
@@ -18,7 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, *args, **kwargs):
         user = super().update(*args, **kwargs)
-        p = user.password
-        user.set_password(p)
+        password = user.password
+        user.set_password(password)
         user.save()
         return user
