@@ -1,4 +1,3 @@
-from cgitb import lookup
 from django.contrib import admin
 from django.urls import path, include
 
