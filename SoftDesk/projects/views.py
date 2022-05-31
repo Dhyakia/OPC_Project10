@@ -33,7 +33,6 @@ class ProjectsViewset(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-
         new_title = request.data['title']
         new_description = request.data['description']
         new_type = request.data['type']
@@ -67,7 +66,7 @@ class ContributorsViewset(ModelViewSet):
     def list(self, request, projects_pk=None):
         queryset = Contributors.objects.filter(project_id=projects_pk)
         serializer = ContributorSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def create(self, request, projects_pk=None):
         contributor = request.data
@@ -126,7 +125,6 @@ class IssuesViewset(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, projects_pk=None, pk=None):
-        
         new_title = request.data['title']
         new_desc = request.data['desc']
         new_priority = request.data['priority']
@@ -185,7 +183,6 @@ class CommentsViewset(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, projects_pk=None, issues_pk=None, pk=None):
-
         new_description = request.data['description']
         comment = Comments.objects.filter(id=pk).update(
             description=new_description
