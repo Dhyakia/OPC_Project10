@@ -35,7 +35,7 @@ class IsContributor(BasePermission):
         if view.action == 'list':
             return bool(request.user and request.user.is_authenticated)
         elif view.action == 'retrieve':
-            False
+            return bool(request.user and request.user.is_authenticated)
         elif view.action == 'create':
             return bool(request.user and request.user.is_authenticated)
         elif view.action == 'update':
