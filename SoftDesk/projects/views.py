@@ -1,18 +1,16 @@
-from gc import get_objects
-from logging import raiseExceptions
-from xml.etree.ElementTree import Comment
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
 from users.models import User
+from projects.permissions import IsAuthor, IsContributor
 from projects.models import Projects, Contributors, Issues, Comments
 from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer, CommentSerializer
 
 
 class ProjectsViewset(ModelViewSet):
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthor | IsContributor]
     serializer_class = ProjectSerializer
     queryset = Projects.objects.all()
 
@@ -31,7 +29,7 @@ class ProjectsViewset(ModelViewSet):
         serializer = ProjectSerializer(data=project)
         
         if serializer.is_valid(raise_exception=True):
-            serializer.save(author_user_id=request.user)
+            serializer.save(author_user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
@@ -62,7 +60,7 @@ class ProjectsViewset(ModelViewSet):
 
 class ContributorsViewset(ModelViewSet):
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthor | IsContributor]
     serializer_class = ContributorSerializer
     queryset = Contributors.objects.all()
 
@@ -87,9 +85,6 @@ class ContributorsViewset(ModelViewSet):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self):
-        pass
-
     def destroy(self, request, projects_pk=None, pk=None):
         contributor = Contributors.objects.filter(id=pk)
 
@@ -104,7 +99,7 @@ class ContributorsViewset(ModelViewSet):
 
 class IssuesViewset(ModelViewSet):
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthor | IsContributor]
     serializer_class = IssueSerializer
     queryset = Issues.objects.all()
 
@@ -160,7 +155,7 @@ class IssuesViewset(ModelViewSet):
 
 class CommentsViewset(ModelViewSet):
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthor | IsContributor]
     serializer_class = CommentSerializer
     queryset = Comments.objects.all()
 
