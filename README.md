@@ -89,8 +89,7 @@ python manage.py runserver
 
 There is multiple ways to navigate the API, i choosed to use POSTMAN instead of the pre-integred REST tool.
 
-Link to the POSTMAN depo can be found here : [LINK TO POSTMAN DEPO]
-
+Link to the POSTMAN depo can be found [here](https://www.postman.com/winter-flare-109531/workspace/softdesk-api/collection/15897996-f2e2bd61-62ee-4c7a-96c0-e3d9d532eb28?action=share&creator=15897996)
 
 # Futur viewing
 
