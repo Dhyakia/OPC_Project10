@@ -59,7 +59,7 @@ class ProjectsViewset(ModelViewSet):
 
 class ContributorsViewset(ModelViewSet):
 
-    permission_classes = [IsAuthor | IsContributor]
+    permission_classes = [IsAuthor]
     serializer_class = ContributorSerializer
     queryset = Contributors.objects.all()
 
