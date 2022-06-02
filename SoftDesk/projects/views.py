@@ -1,30 +1,47 @@
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
-from projects.permissions import IsAuthor, IsContributor
 from projects.models import Projects, Contributors, Issues, Comments
 from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer, CommentSerializer
 
 
 class ProjectsViewset(ModelViewSet):
 
-    permission_classes = [IsAuthor | IsContributor]
+    permission_classes = [IsAuthenticated]
     serializer_class = ProjectSerializer
     queryset = Projects.objects.all()
 
     def list(self, request):
-        queryset = Projects.objects.filter(author_user_id=self.request.user.id)
-        serializer = ProjectSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # perm: all authenticated
+        query_author = Projects.objects.filter(author_user=self.request.user.id)
+        serializer_author = ProjectSerializer(query_author, many=True)
+
+        query_contrib = Contributors.objects.filter(user_id=self.request.user.id)
+        serializer_contrib = ContributorSerializer(query_contrib, many=True)
+
+        return Response({
+            'author': serializer_author.data,
+            'contributor': serializer_contrib.data,
+        }, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
-        query = Projects.objects.get(id=pk)
-        serializer = ProjectSerializer(query)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # perm: project author and contrib
+        current_user = self.request.user.id
+
+        if Projects.objects.filter(id=pk, author_user=current_user).exists() or Contributors.objects.filter(project_id=pk, user_id=current_user).exists():
+            query = Projects.objects.get(id=pk)
+            serializer = ProjectSerializer(query)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
     def create(self, request):
+        # perm: all authenticated
         project = request.data
         serializer = ProjectSerializer(data=project)
         
@@ -33,72 +50,120 @@ class ProjectsViewset(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None):
-        new_title = request.data['title']
-        new_description = request.data['description']
-        new_type = request.data['type']
+        # perm: project author only
+        current_user = self.request.user.id
 
-        project = Projects.objects.filter(id=pk).update(
-            title=new_title,
-            description=new_description,
-            type=new_type
-            )
+        if Projects.objects.filter(id=pk, author_user=current_user).exists():
+            new_title = request.data['title']
+            new_description = request.data['description']
+            new_type = request.data['type']
 
-        return Response(status=status.HTTP_202_ACCEPTED)
+            project = Projects.objects.filter(id=pk).update(
+                title=new_title,
+                description=new_description,
+                type=new_type
+                )
 
-    def destroy(self, request, pk=None):
-        project = Projects.objects.filter(id=pk)
-
-        if project:
-            project.delete()            
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_202_ACCEPTED)
 
         else:
-            message = 'Pas ou plus de projet à cette adresse'
-            return Response(message, status=status.HTTP_404_NOT_FOUND)
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, pk=None):
+        # perm: project author only
+        current_user = self.request.user.id
+        
+        if Projects.objects.filter(id=pk, author_user=current_user).exists():
+            project = Projects.objects.filter(id=pk)
+            if project.exists():
+                project.delete()            
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+            else:
+                message = 'Pas ou plus de projet à cette adresse'
+                return Response(message, status=status.HTTP_404_NOT_FOUND)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
 
 class ContributorsViewset(ModelViewSet):
 
-    permission_classes = [IsAuthor]
+    permission_classes = [IsAuthenticated]
     serializer_class = ContributorSerializer
     queryset = Contributors.objects.all()
 
     def list(self, request, projects_pk=None):
-        queryset = Contributors.objects.filter(project_id=projects_pk)
-        serializer = ContributorSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Perm: project author & contrib
+        current_user = self.request.user.id
+
+        if Projects.objects.filter(id=projects_pk, author_user=current_user).exists() or Contributors.objects.filter(project_id=projects_pk, user_id=current_user).exists():
+            query_author = Projects.objects.filter()
+            serizalizer_author = 
+
+            query_contrib = Contributors.objects.filter(project_id=projects_pk)
+            serializer_contrib = ContributorSerializer(query_contrib, many=True)
+            return Response({
+                'author': serizalizer_author.data,
+                'contributors': serializer_contrib.data,
+            }, status=status.HTTP_200_OK)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
     
     def create(self, request, projects_pk=None):
-        contributor = request.data
-        serializer = ContributorSerializer(data=contributor)
+        # Perm: project author
+        current_user = self.request.user.id
 
-        if serializer.is_valid(raise_exception=True):
-            user_to_add = User.objects.get(id=contributor['user_id'])
-            current_project = Projects.objects.get(id=projects_pk)
+        if Projects.objects.filter(id=projects_pk, author_user=current_user).exists():
+            contributor = request.data
+            serializer = ContributorSerializer(data=contributor)
 
-            serializer.save(
-                user = user_to_add,
-                project = current_project,
-                permission='CTB'
-                )
+            if serializer.is_valid(raise_exception=True):
+                user_to_add = User.objects.get(id=contributor['user_id'])
+                current_project = Projects.objects.get(id=projects_pk)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                serializer.save(
+                    user = user_to_add,
+                    project = current_project,
+                    permission='CTB'
+                    )
 
-    def destroy(self, request, projects_pk=None, pk=None):
-        contributor = Contributors.objects.filter(id=pk)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if contributor:
-            contributor.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                message = 'Serializer ne passe pas la validation'
+                return Response(message, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         else:
-            message = 'Pas ou plus d`utilisateur à cette adresse'
-            return Response(message, status=status.HTTP_404_NOT_FOUND)
-    
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, projects_pk=None, pk=None):
+        # Perm: project author
+        current_user = self.request.user.id
+
+        if Projects.objects.filter(id=projects_pk, author_user=current_user).exists():
+            contributor = Contributors.objects.filter(id=pk)
+            if contributor.exists():
+                contributor.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+            else:
+                message = 'Pas ou plus d`utilisateur à cette adresse'
+                return Response(message, status=status.HTTP_404_NOT_FOUND)
+
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)    
+
 
 class IssuesViewset(ModelViewSet):
 
-    permission_classes = [IsAuthor | IsContributor]
+    permission_classes = [IsAuthenticated]
     serializer_class = IssueSerializer
     queryset = Issues.objects.all()
 
@@ -142,7 +207,7 @@ class IssuesViewset(ModelViewSet):
     def destroy(self, request, projects_pk=None, pk=None):
         issue = Issues.objects.filter(project=projects_pk, id=pk)
 
-        if issue:
+        if issue.exists():
             issue.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -153,7 +218,7 @@ class IssuesViewset(ModelViewSet):
 
 class CommentsViewset(ModelViewSet):
 
-    permission_classes = [IsAuthor | IsContributor]
+    permission_classes = [IsAuthenticated]
     serializer_class = CommentSerializer
     queryset = Comments.objects.all()
 
@@ -190,7 +255,7 @@ class CommentsViewset(ModelViewSet):
 
         return Response(status=status.HTTP_202_ACCEPTED)
 
-    def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):   
+    def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):
         current_user = User.objects.get(id=request.user.id)
         current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
 
@@ -200,7 +265,7 @@ class CommentsViewset(ModelViewSet):
             id=pk
             )
 
-        if comment:
+        if comment.exists():
             comment.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
