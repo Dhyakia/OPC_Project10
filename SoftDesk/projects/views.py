@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.models import User
 from projects.models import Projects, Contributors, Issues, Comments
 from projects.serializers import ProjectSerializer, ContributorSerializer, IssueSerializer, CommentSerializer
+from users.serializers import UserSerializer
 
 
 class ProjectsViewset(ModelViewSet):
@@ -77,8 +78,9 @@ class ProjectsViewset(ModelViewSet):
         if Projects.objects.filter(id=pk, author_user=current_user).exists():
             project = Projects.objects.filter(id=pk)
             if project.exists():
-                project.delete()            
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                project.delete()     
+                message = 'Projet supprimé'       
+                return Response(message, status=status.HTTP_204_NO_CONTENT)
 
             else:
                 message = 'Pas ou plus de projet à cette adresse'
@@ -100,13 +102,19 @@ class ContributorsViewset(ModelViewSet):
         current_user = self.request.user.id
 
         if Projects.objects.filter(id=projects_pk, author_user=current_user).exists() or Contributors.objects.filter(project_id=projects_pk, user_id=current_user).exists():
-            query_author = Projects.objects.filter()
-            serizalizer_author = 
 
+            query_project = Projects.objects.filter(id=projects_pk)
+            serializer_project = ProjectSerializer(query_project, many=True)
+            
+            author_id = serializer_project.data[0]['author_user']
+
+            query_user = User.objects.filter(id=author_id)
+            serializer_user = UserSerializer(query_user, many=True)
+            
             query_contrib = Contributors.objects.filter(project_id=projects_pk)
             serializer_contrib = ContributorSerializer(query_contrib, many=True)
             return Response({
-                'author': serizalizer_author.data,
+                'author': serializer_user.data,
                 'contributors': serializer_contrib.data,
             }, status=status.HTTP_200_OK)
         
@@ -150,7 +158,8 @@ class ContributorsViewset(ModelViewSet):
             contributor = Contributors.objects.filter(id=pk)
             if contributor.exists():
                 contributor.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                message = 'Contributor retiré du projet'
+                return Response(message, status=status.HTTP_204_NO_CONTENT)
 
             else:
                 message = 'Pas ou plus d`utilisateur à cette adresse'
@@ -168,53 +177,85 @@ class IssuesViewset(ModelViewSet):
     queryset = Issues.objects.all()
 
     def list(self, request, projects_pk=None):
-        queryset = Issues.objects.filter(project=projects_pk)
-        serializer = IssueSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # perm: project author and contributors
+        current_user = self.request.user.id
+
+        if Projects.objects.filter(id=projects_pk, author_user=current_user).exists() or Contributors.objects.filter(project_id=projects_pk, user_id=current_user).exists():
+            queryset = Issues.objects.filter(project=projects_pk)
+            serializer = IssueSerializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
     def create(self, request, projects_pk=None):
-        issue = request.data
-        serializer = IssueSerializer(data=issue)
+        # perm: project author and contributors
+        current_user = self.request.user.id
 
-        if serializer.is_valid(raise_exception=True):
-            author = User.objects.get(id=request.user.id)
-            assigne = User.objects.get(id=issue['assigne_user'])
-            current_project = Projects.objects.get(id=projects_pk)
+        if Projects.objects.filter(id=projects_pk, author_user=current_user).exists() or Contributors.objects.filter(project_id=projects_pk, user_id=current_user).exists():
+            issue = request.data
+            serializer = IssueSerializer(data=issue)
 
-            serializer.save(
-                author_user = author,
-                assigne_user = assigne,
-                project = current_project
-            )
+            if serializer.is_valid(raise_exception=True):
+                author = User.objects.get(id=request.user.id)
+                assigne = User.objects.get(id=issue['assigne_user'])
+                current_project = Projects.objects.get(id=projects_pk)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                serializer.save(
+                    author_user = author,
+                    assigne_user = assigne,
+                    project = current_project
+                )
+
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
     def update(self, request, projects_pk=None, pk=None):
-        new_title = request.data['title']
-        new_desc = request.data['desc']
-        new_priority = request.data['priority']
-        new_tag = request.data['tag']
+        # perm: issue author only
+        current_user = self.request.user.id
 
-        issue = Issues.objects.filter(id=pk).update(
-            title=new_title,
-            desc=new_desc,
-            priority=new_priority,
-            tag=new_tag
-        )
+        if Issues.objects.filter(project=projects_pk, id=pk, author_user=current_user).exists():
+            new_title = request.data['title']
+            new_desc = request.data['desc']
+            new_priority = request.data['priority']
+            new_tag = request.data['tag']
 
-        return Response(status=status.HTTP_202_ACCEPTED)
+            issue = Issues.objects.filter(id=pk).update(
+                title=new_title,
+                desc=new_desc,
+                priority=new_priority,
+                tag=new_tag
+            )
+
+            return Response(status=status.HTTP_202_ACCEPTED)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
     def destroy(self, request, projects_pk=None, pk=None):
-        issue = Issues.objects.filter(project=projects_pk, id=pk)
+        # perm: issue author only
+        current_user = self.request.user.id
 
-        if issue.exists():
-            issue.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        if Issues.objects.filter(project=projects_pk, id=pk, author_user=current_user).exists():
+            issue = Issues.objects.filter(project=projects_pk, id=pk)
+
+            if issue.exists():
+                issue.delete()
+                message = 'Problême supprimé'
+                return Response(message, status=status.HTTP_204_NO_CONTENT)
+
+            else:
+                message = 'Pas ou plus de problême à cette adresse'
+                return Response(message, status=status.HTTP_404_NOT_FOUND)
 
         else:
-            message = 'Pas ou plus de problême à cette adresse'
-            return Response(message, status=status.HTTP_404_NOT_FOUND)
-
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
 class CommentsViewset(ModelViewSet):
 
@@ -223,52 +264,121 @@ class CommentsViewset(ModelViewSet):
     queryset = Comments.objects.all()
 
     def list(self, request, projects_pk=None, issues_pk=None):
-        queryset = Comments.objects.filter(issue=issues_pk)
-        serializer = CommentSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # perm: issue author and assigne_user
+        current_user = self.request.user.id
+
+        query_issue = Issues.objects.filter(project=projects_pk, id=issues_pk)
+        serialize_issue = IssueSerializer(query_issue, many=True)
+
+        author_id = serialize_issue.data[0]['author_user']
+        assigne_id = serialize_issue.data[0]['assigne_user']
+
+        if author_id == current_user or assigne_id == current_user:
+            queryset = Comments.objects.filter(issue=issues_pk)
+            serializer = CommentSerializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
+
 
     def retrieve(self, request, projects_pk=None, issues_pk=None, pk=None):
-        query =  Comments.objects.get(id=pk)
-        serializer = CommentSerializer(query)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # perm: issue author and assigne_user
+        current_user = self.request.user.id
+
+        query_issue = Issues.objects.filter(project=projects_pk, id=issues_pk)
+        serialize_issue = IssueSerializer(query_issue, many=True)
+
+        author_id = serialize_issue.data[0]['author_user']
+        assigne_id = serialize_issue.data[0]['assigne_user']
+
+        if author_id == current_user or assigne_id == current_user:
+            query =  Comments.objects.get(id=pk)
+            serializer = CommentSerializer(query)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
 
     def create(self, request, projects_pk=None, issues_pk=None):
-        comment = request.data
-        serializer = CommentSerializer(data=comment)
+        # perm: issue author and assigne_user
+        current_user = self.request.user.id
 
-        if serializer.is_valid(raise_exception=True):
+        query_issue = Issues.objects.filter(project=projects_pk, id=issues_pk)
+        serialize_issue = IssueSerializer(query_issue, many=True)
+
+        author_id = serialize_issue.data[0]['author_user']
+        assigne_id = serialize_issue.data[0]['assigne_user']
+
+        if author_id == current_user or assigne_id == current_user:
+            comment = request.data
+            serializer = CommentSerializer(data=comment)
+
+            if serializer.is_valid(raise_exception=True):
+                current_user = User.objects.get(id=request.user.id)
+                current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
+
+                serializer.save(
+                    author_user = current_user,
+                    issue = current_issue
+                )
+                
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
+
+    def update(self, request, projects_pk=None, issues_pk=None, pk=None):
+        # perm: issue author only
+        current_user = self.request.user.id
+
+        query_issue = Issues.objects.filter(project=projects_pk, id=issues_pk)
+        serialize_issue = IssueSerializer(query_issue, many=True)
+
+        author_id = serialize_issue.data[0]['author_user']
+
+        if author_id == current_user:
+            new_description = request.data['description']
+            comment = Comments.objects.filter(id=pk).update(
+                description=new_description
+            )
+
+            return Response(status=status.HTTP_202_ACCEPTED)
+
+        else:
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):
+        # perm: issue author only
+        current_user = self.request.user.id
+
+        query_issue = Issues.objects.filter(project=projects_pk, id=issues_pk)
+        serialize_issue = IssueSerializer(query_issue, many=True)
+
+        author_id = serialize_issue.data[0]['author_user']
+
+        if author_id == current_user:
             current_user = User.objects.get(id=request.user.id)
             current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
 
-            serializer.save(
-                author_user = current_user,
-                issue = current_issue
-            )
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            comment = Comments.objects.filter(
+                author_user=current_user,
+                issue=current_issue,
+                id=pk
+                )
 
-    def update(self, request, projects_pk=None, issues_pk=None, pk=None):
-        new_description = request.data['description']
-        comment = Comments.objects.filter(id=pk).update(
-            description=new_description
-        )
+            if comment.exists():
+                comment.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
 
-        return Response(status=status.HTTP_202_ACCEPTED)
-
-    def destroy(self, request, projects_pk=None, issues_pk=None, pk=None):
-        current_user = User.objects.get(id=request.user.id)
-        current_issue = Issues.objects.get(id=issues_pk, project=projects_pk)
-
-        comment = Comments.objects.filter(
-            author_user=current_user,
-            issue=current_issue,
-            id=pk
-            )
-
-        if comment.exists():
-            comment.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                message = 'Pas ou plus de commentaire à cette adresse'
+                return Response(message, status=status.HTTP_404_NOT_FOUND)
 
         else:
-            message = 'Pas ou plus de commentaire à cette adresse'
-            return Response(message, status=status.HTTP_404_NOT_FOUND)
+            message = 'Circulez, rien à voir'
+            return Response(message, status=status.HTTP_403_FORBIDDEN)
