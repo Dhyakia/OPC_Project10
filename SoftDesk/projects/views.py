@@ -59,13 +59,15 @@ class ProjectsViewset(ModelViewSet):
             new_description = request.data['description']
             new_type = request.data['type']
 
-            project = Projects.objects.filter(id=pk).update(
+            project = Projects.objects.filter(id=pk)
+            project.update(
                 title=new_title,
                 description=new_description,
                 type=new_type
-                )
+            )
+            serializer = ProjectSerializer(project, many=True)
 
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
         else:
             message = 'Circulez, rien à voir'
@@ -224,14 +226,16 @@ class IssuesViewset(ModelViewSet):
             new_priority = request.data['priority']
             new_tag = request.data['tag']
 
-            issue = Issues.objects.filter(id=pk).update(
+            issue = Issues.objects.filter(id=pk)
+            issue.update(
                 title=new_title,
                 desc=new_desc,
                 priority=new_priority,
                 tag=new_tag
             )
+            serializer = IssueSerializer(issue, many=True)
 
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
         
         else:
             message = 'Circulez, rien à voir'
@@ -342,11 +346,14 @@ class CommentsViewset(ModelViewSet):
 
         if author_id == current_user:
             new_description = request.data['description']
-            comment = Comments.objects.filter(id=pk).update(
+
+            comment = Comments.objects.filter(id=pk)
+            comment.update(
                 description=new_description
             )
+            serializer = CommentSerializer(comment, many=True)
 
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
         else:
             message = 'Circulez, rien à voir'
